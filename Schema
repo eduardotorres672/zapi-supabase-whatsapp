@@ -1,0 +1,24 @@
+-- Tabela principal de contatos
+CREATE TABLE contacts (
+    id                 BIGSERIAL PRIMARY KEY,
+    name               TEXT        NOT NULL,
+    phone              TEXT        NOT NULL,
+    active             BOOLEAN     NOT NULL DEFAULT TRUE,
+
+    -- Rastreamento de envios
+    sent_at            TIMESTAMPTZ,          -- preenchido após envio bem-sucedido
+    last_attempted_at  TIMESTAMPTZ,          -- última tentativa (sucesso ou falha)
+    last_template      TEXT,                 -- template usado no último envio
+    last_status        TEXT                  -- 'sent' | 'failed'
+);
+
+-- Índice para acelerar a busca de pendentes
+CREATE INDEX idx_contacts_pending ON contacts (active, sent_at)
+    WHERE active = TRUE AND sent_at IS NULL;
+
+-- Dados de exemplo
+INSERT INTO contacts (name, phone, active) VALUES
+    ('Eduardo',  '5511999999991', true),
+    ('Victoria', '5511999999992', true),
+    ('Carlos',   '5511999999993', true),
+    ('Inativo',  '5511999999994', false);   -- ignorado pelo filtro active = true
