@@ -1,1 +1,7 @@
-# zapi-supabase-whatszap
+.env
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
