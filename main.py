@@ -1,8 +1,105 @@
-# Supabase
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your_supabase_anon_key
+import os
+import re
+import logging
+import requests
+from dotenv import load_dotenv
+from supabase import create_client
 
-# Z-API
-ZAPI_INSTANCE_ID=your_instance_id
-ZAPI_TOKEN=your_zapi_token
-ZAPI_CLIENT_TOKEN=your_client_token
+load_dotenv()
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+# telefone só com número, sem + ou espaço (Z-API não aceita formatado)
+PHONE_REGEX = re.compile(r"^\d{10,15}$")
+
+
+def get_contacts(supabase):
+    response = (
+        supabase.table("contacts")
+        .select("name, phone")
+        .eq("active", True)
+        .limit(3)
+        .execute()
+    )
+    return response.data
+
+
+def send_whatsapp(name, phone):
+    instance_id = os.environ["ZAPI_INSTANCE_ID"]
+    token = os.environ["ZAPI_TOKEN"]
+    client_token = os.environ["ZAPI_CLIENT_TOKEN"]
+
+    url = f"https://api.z-api.io/instances/{instance_id}/token/{token}/send-text"
+
+    payload = {
+        "phone": phone,
+        "message": f"Olá, {name} tudo bem com você?",
+    }
+
+    try:
+        response = requests.post(
+            url,
+            json=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Client-Token": client_token,
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+        logger.info(f"mensagem enviada pra {name} ({phone})")
+        return True
+
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"erro ao enviar pra {name}: {e.response.status_code} - {e.response.text}")
+        return False
+    except requests.exceptions.RequestException as e:
+        logger.error(f"falha de conexão pra {name}: {e}")
+        return False
+
+
+def main():
+    supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
+
+    contacts = get_contacts(supabase)
+
+    if not contacts:
+        logger.warning("nenhum contato encontrado")
+        return
+
+    logger.info(f"{len(contacts)} contato(s) encontrado(s)")
+
+    enviados = 0
+    falhas = 0
+
+    for contact in contacts:
+        name = contact.get("name", "").strip()
+        phone = contact.get("phone", "").strip()
+
+        if not name or not phone:
+            logger.warning(f"dado faltando, pulando: {contact}")
+            falhas += 1
+            continue
+
+        # valido o telefone antes de gastar uma chamada de API com algo que vai falhar
+        if not PHONE_REGEX.match(phone):
+            logger.warning(f"telefone fora do formato esperado, pulando {name}: '{phone}'")
+            falhas += 1
+            continue
+
+        if send_whatsapp(name, phone):
+            enviados += 1
+        else:
+            falhas += 1
+
+    logger.info(f"fim — {enviados} enviado(s), {falhas} falha(s)")
+
+
+if __name__ == "__main__":
+  main()
+    main()
+
