@@ -1,10 +1,12 @@
-# 📲 whatsapp-notifier
+Z-API Supabase WhatsApp
 
-Busca contatos no Supabase e envia mensagem personalizada via WhatsApp usando a Z-API.
+Script em Python que busca contatos ativos na tabela `contacts` do Supabase e envia mensagens personalizadas via Z-API (WhatsApp).
 
 ---
 
-## 🗄️ Tabela no Supabase
+## Requisitos da Tabela
+
+Crie a tabela no Supabase com o seguinte SQL:
 
 ```sql
 CREATE TABLE contacts (
@@ -14,39 +16,52 @@ CREATE TABLE contacts (
     active  BOOLEAN NOT NULL DEFAULT TRUE
 );
 
-INSERT INTO contacts (name, phone) VALUES
-    ('Eduardo', '5511999999991'),
-    ('Victoria', '5511999999992'),
-    ('Carlos',   '5511999999993');
-```
+-- Exemplo de dados
+INSERT INTO contacts (name, phone, active) VALUES
+    ('Eduardo', '5511999999991', true),
+    ('Victoria', '5511999999992', true),
+    ('Carlos', '5511999999993', true);
+Atenção: O campo phone deve conter apenas números (DDI + DDD + número).
+Exemplo correto: 5511912345678
 
-> Telefone só com número, sem `+` ou espaço. Ex: `5511912345678`
+Configuração
 
----
+Clone o repositório:Bashgit clone https://github.com/eduardotorres672/zapi-supabase-whatsapp.git
+cd zapi-supabase-whatsapp
+Copie o arquivo de exemplo:Bashcp env.example .env
+Edite o arquivo .env e preencha suas credenciais:
 
-## ⚙️ Variáveis de ambiente
+env# Supabase
+SUPABASE_URL=https://seusupabase.supabase.co
+SUPABASE_KEY=sua_anon_key
 
-```env
-SUPABASE_URL=
-SUPABASE_KEY=
-ZAPI_INSTANCE_ID=
-ZAPI_TOKEN=
-ZAPI_CLIENT_TOKEN=
-```
+# Z-API
+ZAPI_INSTANCE_ID=seu_instance_id
+ZAPI_TOKEN=seu_token
+ZAPI_CLIENT_TOKEN=seu_client_token
 
----
+Como Executar
+Bashpython -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 
-## ▶️ Como rodar
-
-```bash
-python -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+
+cp env.example .env                # configure o .env
 python main.py
-```
 
----
+Stack
 
-## 🧰 Stack
+Python 3
+Supabase (supabase-py)
+Z-API
+python-dotenv
+requests
 
-`Python` · `Supabase` · `Z-API`
+
+Observações Importantes
+
+A mensagem enviada está definida na variável message dentro do arquivo main.py
+Apenas contatos com active = true são processados
+O script não possui delay entre envios nem registra os envios realizados
+
+Projeto simples, funcional e fácil de customizar.
